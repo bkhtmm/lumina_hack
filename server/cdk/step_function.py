@@ -61,15 +61,8 @@ class StepFunctionStack:
             output_path="$.Payload",
         )
 
-        convert_to_wav_step = _aws_stepfunctions_tasks.BatchSubmitJob(
-            cdk_scope,
-            "ConvertToWAV",
-            job_definition_arn=cdk_scope.mp3_to_wav_job_def.job_definition_arn,
-            job_name="convert_to_wav_job",
-            job_queue_arn=cdk_scope.mp3_to_wav_job_queue.job_queue_arn,
-            container_overrides=container_overrides,
-            result_path=JsonPath.DISCARD,
-        )
+        # Remove Batch job - using Lemonfox API instead
+        # convert_to_wav_step = _aws_stepfunctions_tasks.BatchSubmitJob(...)
 
         diarization_fn_step = _aws_stepfunctions_tasks.LambdaInvoke(
             cdk_scope,
@@ -127,15 +120,8 @@ class StepFunctionStack:
             output_path="$.Payload",
         )
 
-        chunking_step = _aws_stepfunctions_tasks.BatchSubmitJob(
-            cdk_scope,
-            "Chunking",
-            job_definition_arn=cdk_scope.chunking_job_def.job_definition_arn,
-            job_name="chunking_job",
-            job_queue_arn=cdk_scope.chunking_job_queue.job_queue_arn,
-            container_overrides=container_overrides,
-            result_path=JsonPath.DISCARD,
-        )
+        # Remove Batch job - using Lemonfox API instead
+        # chunking_step = _aws_stepfunctions_tasks.BatchSubmitJob(...)
 
         detect_language_step = _aws_stepfunctions_tasks.LambdaInvoke(
             cdk_scope,
@@ -347,7 +333,7 @@ class StepFunctionStack:
             _aws_stepfunctions.Choice(cdk_scope, "FileType?")
             .when(
                 if_file_type_is_mp3,
-                convert_to_wav_step.next(diarization_fn_step),
+                diarization_fn_step,  # Lemonfox handles MP3 directly
             )
             .when(
                 if_file_type_is_text,
@@ -366,7 +352,7 @@ class StepFunctionStack:
                             ),
                         )
                         .otherwise(
-                            chunking_step.add_catch(fail_job).next(transcription_chain)
+                            transcription_chain  # Skip chunking, go directly to transcription
                         )
                     )
                 ),

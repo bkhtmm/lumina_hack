@@ -14,7 +14,6 @@ from aws_cdk import (
     aws_ecs as ecs,
     aws_ec2 as ec2,
     aws_iam as iam,
-    BundlingOptions,
     aws_ssm as ssm,
     aws_dynamodb as dynamodb,
     Fn,
@@ -58,55 +57,12 @@ class ServerStack(Stack):
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 
-        comprehend_job_role = iam.Role(
-            self,
-            "comprehend_job_role",
-            assumed_by=iam.ServicePrincipal("comprehend.amazonaws.com"),
-        )
+        # Comprehend removed - using Llama API instead
+        # comprehend_job_role = iam.Role(...)
+        # comprehend_job_policy = iam.Policy(...)
 
-        comprehend_job_policy = iam.Policy(
-            self,
-            "detect_sentiment_policy",
-            statements=[
-                iam.PolicyStatement(
-                    effect=iam.Effect.ALLOW,
-                    resources=["*"],
-                    actions=[
-                        "iam:PassRole",
-                        "comprehend:DetectDominantLanguage",
-                        "comprehend:DetectEntities",
-                        "comprehend:DetectKeyPhrases",
-                        "comprehend:DetectPiiEntities",
-                        "comprehend:DetectSentiment",
-                        "comprehend:StartDominantLanguageDetectionJob",
-                        "comprehend:StartSentimentDetectionJob",
-                        "comprehend:StartEntitiesDetectionJob",
-                        "comprehend:StartKeyPhrasesDetectionJob",
-                        "comprehend:DescribeDominantLanguageDetectionJob",
-                        "comprehend:DescribeEntitiesDetectionJob",
-                        "comprehend:DescribeKeyPhrasesDetectionJob",
-                        "comprehend:DescribePiiEntitiesDetectionJob",
-                        "comprehend:DescribeSentimentDetectionJob",
-                    ],
-                )
-            ],
-        )
-        comprehend_job_role.attach_inline_policy(comprehend_job_policy)
-
-        sagemaker_invocation_policy = iam.Policy(
-            self,
-            "sagemaker_invocation_policy",
-            statements=[
-                iam.PolicyStatement(
-                    effect=iam.Effect.ALLOW,
-                    resources=["*"],
-                    actions=[
-                        "sagemaker:InvokeEndpoint",
-                        "sagemaker:InvokeEndpointAsync",
-                    ],
-                )
-            ],
-        )
+        # Remove SageMaker invocation policy - no longer needed
+        # sagemaker_invocation_policy = iam.Policy(...)
 
         # This resource alone will create a private/public subnet in each AZ as well as nat/internet gateway(s)
         vpc = ec2.Vpc(self, "ci_vpc", max_azs=3)
@@ -142,73 +98,25 @@ class ServerStack(Stack):
             string_value=uploads_table.table_name
         )
 
-        # Fetching model output processing bucket from ML Stack
-        ml_stack_output_bucket = _s3.Bucket.from_bucket_arn(
+        # Create S3 bucket for processing (replacing ML stack bucket)
+        ml_stack_output_bucket = _s3.Bucket(
             self,
-            "input_bucket_from_arn",
-            bucket_arn=Fn.import_value("ml-process-bucket"),
+            "processing-bucket",
+            bucket_name=f"ci-processing-bucket-{self.account}",
+            versioned=True,
+            block_public_access=_s3.BlockPublicAccess.BLOCK_ALL,
         )
 
-        # Mp3 to WAV related Batch stack
-        self.mp3_to_wav_job_queue = batch.JobQueue(self, "mp3_batch")
-
-        mp3_to_wav_compute_environment = batch.FargateComputeEnvironment(
-            self,
-            "mp3_to_wav_compute_env",
-            # spot=True,
-            vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
-            ),
-            vpc=vpc,
-        )
-
-        self.mp3_to_wav_job_queue.add_compute_environment(
-            mp3_to_wav_compute_environment, 0
-        )
-
-        self.mp3_to_wav_job_def = batch.EcsJobDefinition(
-            self,
-            "convert_mp3_to_wav_job_def",
-            container=batch.EcsFargateContainerDefinition(
-                self,
-                "convert_mp3_to_wav_container_def",
-                image=ecs.ContainerImage.from_asset("./server/containers/mp3towav"),
-                memory=Size.mebibytes(4096),
-                cpu=2,
-                execution_role=task_execution_role,
-                job_role=batch_job_role,
-            ),
-            retry_attempts=1,
-        )
-
-        # Chunking related Batch stack
-        self.chunking_job_queue = batch.JobQueue(self, "chunking_job_queue")
-
-        chunking_compute_environment = batch.FargateComputeEnvironment(
-            self,
-            "chunking_compute_env",
-            vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
-            ),
-            vpc=vpc,
-        )
-
-        self.chunking_job_queue.add_compute_environment(chunking_compute_environment, 0)
-
-        self.chunking_job_def = batch.EcsJobDefinition(
-            self,
-            "chunking_job_def",
-            container=batch.EcsFargateContainerDefinition(
-                self,
-                "chunking_container_def",
-                image=ecs.ContainerImage.from_asset("./server/containers/chunking"),
-                memory=Size.mebibytes(8 * 1024),
-                cpu=4,
-                execution_role=task_execution_role,
-                job_role=batch_job_role,
-            ),
-            retry_attempts=1,
-        )
+        # Remove Batch jobs - using Lemonfox API instead
+        # self.mp3_to_wav_job_queue = batch.JobQueue(self, "mp3_batch")
+        # mp3_to_wav_compute_environment = batch.FargateComputeEnvironment(...)
+        # self.mp3_to_wav_job_queue.add_compute_environment(...)
+        # self.mp3_to_wav_job_def = batch.EcsJobDefinition(...)
+        
+        # self.chunking_job_queue = batch.JobQueue(self, "chunking_job_queue")
+        # chunking_compute_environment = batch.FargateComputeEnvironment(...)
+        # self.chunking_job_queue.add_compute_environment(...)
+        # self.chunking_job_def = batch.EcsJobDefinition(...)
 
         # Lambda Stack
         self.check_input_file_type_fn = _lambda.Function(
@@ -217,24 +125,11 @@ class ServerStack(Stack):
             runtime=ci_lambda_runtime,
             handler="check_input_file_type.handler",
             timeout=Duration.minutes(3),
-            code=_lambda.Code.from_asset(
-                "server/lambdas",
-                bundling=BundlingOptions(
-                    image=_lambda.Runtime.PYTHON_3_11.bundling_image,
-                    command=[
-                        "bash",
-                        "-c",
-                        "pip install fleep -t /asset-output && cp -au . /asset-output",
-                    ],
-                ),
-            ),
+            code=_lambda.Code.from_asset("server/lambdas"),
         )
 
-        diarization_model_endpoint = ssm.StringParameter.from_string_parameter_name(
-            self,
-            "diarization_model_endpoint",
-            string_parameter_name=cfg.CI_DIARIZATION_ENDPOINT_PARAM,
-        )
+        # Remove SSM parameter references - using Lemonfox API instead
+        # diarization_model_endpoint = ssm.StringParameter.from_string_parameter_name(...)
 
         self.diarization_fn = _lambda.Function(
             self,
@@ -243,7 +138,12 @@ class ServerStack(Stack):
             handler="diarization.handler",
             code=_lambda.Code.from_asset("server/lambdas"),
             timeout=Duration.minutes(3),
-            environment={"MODEL_ENDPOINT": diarization_model_endpoint.string_value},
+            environment={
+                "LEMONFOX_API_KEY": cfg.LEMONFOX_API_KEY,
+                "LEMONFOX_BASE_URL": cfg.LEMONFOX_BASE_URL,
+                "LEMONFOX_TIMEOUT": str(cfg.LEMONFOX_TIMEOUT),
+                "LEMONFOX_MAX_RETRIES": str(cfg.LEMONFOX_MAX_RETRIES)
+            },
         )
 
         self.check_diarization_output_fn = _lambda.Function(
@@ -255,11 +155,8 @@ class ServerStack(Stack):
             timeout=Duration.minutes(3),
         )
 
-        transcription_model_endpoint = ssm.StringParameter.from_string_parameter_name(
-            self,
-            "transcription_model_endpoint",
-            string_parameter_name=cfg.CI_TRANSCRIPTION_ENDPOINT_PARAM,
-        )
+        # Remove SSM parameter references - using Lemonfox API instead
+        # transcription_model_endpoint = ssm.StringParameter.from_string_parameter_name(...)
 
         self.transcription_fn = _lambda.Function(
             self,
@@ -269,7 +166,10 @@ class ServerStack(Stack):
             code=_lambda.Code.from_asset("server/lambdas"),
             timeout=Duration.minutes(3),
             environment={
-                "TRANSCRIPTION_ENDPOINT": transcription_model_endpoint.string_value
+                "LEMONFOX_API_KEY": cfg.LEMONFOX_API_KEY,
+                "LEMONFOX_BASE_URL": cfg.LEMONFOX_BASE_URL,
+                "LEMONFOX_TIMEOUT": str(cfg.LEMONFOX_TIMEOUT),
+                "LEMONFOX_MAX_RETRIES": str(cfg.LEMONFOX_MAX_RETRIES)
             },
         )
 
@@ -307,7 +207,7 @@ class ServerStack(Stack):
             runtime=ci_lambda_runtime,
             handler="start_comprehension.handler",
             code=_lambda.Code.from_asset("server/lambdas"),
-            environment={"comprehend_job_role": comprehend_job_role.role_arn},
+            environment={},
         )
 
         self.check_sentiment_job_fn = _lambda.Function(
@@ -327,36 +227,18 @@ class ServerStack(Stack):
         )
 
         # Summarization stack to process output json file
-        summarize_fn_policy = iam.Policy(
-            self,
-            "summarize_fn_policy",
-            statements=[
-                iam.PolicyStatement(
-                    effect=iam.Effect.ALLOW,
-                    resources=["*"],
-                    actions=["bedrock:InvokeModel"],
-                )
-            ],
-        )
-
         self.summarize_fn = _lambda.Function(
             self,
             id="summarize_fn",
             handler="summarize.handler",
             timeout=Duration.minutes(15),
             runtime=ci_lambda_runtime,
-            # We are pip installing boto3 as bedrock is not available by default
-            code=_lambda.Code.from_asset(
-                "server/lambdas",
-                bundling=BundlingOptions(
-                    image=_lambda.Runtime.PYTHON_3_11.bundling_image,
-                    command=[
-                        "bash",
-                        "-c",
-                        "pip install boto3 -t /asset-output && cp -au . /asset-output",
-                    ],
-                ),
-            ),
+            # Installing requests for Llama4Scout API calls
+            code=_lambda.Code.from_asset("server/lambdas"),
+            environment={
+                "MAX_TOKENS": "256",
+                "TEMPERATURE": "0.1"
+            },
         )
 
         self.post_processing_fn = _lambda.Function(
@@ -397,7 +279,7 @@ class ServerStack(Stack):
         transcripts_input_bucket.grant_read_write(self.diarization_fn.role)
         transcripts_input_bucket.grant_read_write(self.transcription_fn.role)
         transcripts_input_bucket.grant_read_write(self.summarize_fn.role)
-        transcripts_input_bucket.grant_read_write(comprehend_job_role)
+        # transcripts_input_bucket.grant_read_write(comprehend_job_role)  # Removed - no longer needed
         transcripts_input_bucket.grant_read_write(self.transcription_output_fn.role)
         transcripts_input_bucket.grant_read_write(self.combine_file_output_fn.role)
         transcripts_input_bucket.grant_read_write(self.check_diarization_output_fn.role)
@@ -421,18 +303,18 @@ class ServerStack(Stack):
         prompts.agent_feedback_prompt.grant_read(self.summarize_fn.role)
         prompts.customer_feedback_prompt.grant_read(self.summarize_fn.role)
 
-        self.start_comprehension_fn.role.attach_inline_policy(comprehend_job_policy)
-        self.detect_language_fn.role.attach_inline_policy(comprehend_job_policy)
-        self.check_sentiment_job_fn.role.attach_inline_policy(comprehend_job_policy)
-        self.check_entities_job_fn.role.attach_inline_policy(comprehend_job_policy)
-
-        self.summarize_fn.role.attach_inline_policy(summarize_fn_policy)
+        # Comprehend policies removed - no longer needed
+        # self.start_comprehension_fn.role.attach_inline_policy(comprehend_job_policy)
+        # self.detect_language_fn.role.attach_inline_policy(comprehend_job_policy)
+        # self.check_sentiment_job_fn.role.attach_inline_policy(comprehend_job_policy)
+        # self.check_entities_job_fn.role.attach_inline_policy(comprehend_job_policy)
 
         # Granting read/write access to Batch>Container Tasks
         transcripts_input_bucket.grant_read_write(batch_job_role)
 
-        self.diarization_fn.role.attach_inline_policy(sagemaker_invocation_policy)
-        self.transcription_fn.role.attach_inline_policy(sagemaker_invocation_policy)
+        # Remove SageMaker policy attachments - no longer needed
+        # self.diarization_fn.role.attach_inline_policy(sagemaker_invocation_policy)
+        # self.transcription_fn.role.attach_inline_policy(sagemaker_invocation_policy)
 
         # Initializing all prompts that are part of process stack
         step_function_stack = StepFunctionStack(cdk_scope=self)
@@ -441,6 +323,7 @@ class ServerStack(Stack):
 
         # Adding ARN of State Machine to Lambda
         s3_trigger_lambda.add_environment("ci_workflow", ci_step.state_machine_arn)
+        s3_trigger_lambda.add_environment("CI_STEPS", ci_step.state_machine_arn)
 
         CfnOutput(
             self,

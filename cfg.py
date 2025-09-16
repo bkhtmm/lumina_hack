@@ -40,6 +40,22 @@ CI_TRANSCRIPTION_ENDPOINT_PARAM = "ci-transcription-endpoint"
 
 ML_MODEL_SUFFIX = "-v1"
 
+# Llama4Scout API Configuration (replaces Bedrock)
+LLAMA_API_ENDPOINT = "https://bkwg3037dnb7aq-8000.proxy.runpod.net/v1/chat/completions"
+LLAMA_MODEL_NAME = "llama4scout"
+LLAMA_MAX_TOKENS = 1024
+LLAMA_TEMPERATURE = 0.1
+LLAMA_API_TIMEOUT = 30
+LLAMA_MAX_RETRIES = 3
+
+# Lemonfox.ai API Configuration (replaces SageMaker)
+LEMONFOX_API_KEY = "tYI8fFQFeNdK1sTexXo7l2idDCkKu5O3"
+LEMONFOX_BASE_URL = "https://api.lemonfox.ai/v1"
+LEMONFOX_TIMEOUT = 300  # 5 minutes for long audio files
+LEMONFOX_MAX_RETRIES = 3
+LEMONFOX_MIN_SPEAKERS = 2
+LEMONFOX_MAX_SPEAKERS = 2
+
 # Lambda Related Constants
 PYTHON_VERSION = "PYTHON_3_11"
 STEP_FUNCTION_WAIT_TIME = 30

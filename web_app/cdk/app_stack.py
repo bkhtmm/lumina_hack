@@ -22,7 +22,6 @@ from aws_cdk import (
     aws_dynamodb as dynamodb,
     Duration,
     aws_logs as logs,
-    BundlingOptions,
 )
 from aws_cdk.aws_cognito_identitypool_alpha import (
     IdentityPoolAuthenticationProviders,
@@ -46,11 +45,10 @@ class WebAppStack(Stack):
             "chatbot_prompt",
             description="Prompt template for chatbot",
             parameter_name=cfg.SSM_LLM_CHATBOT_NAME,
-            string_value="<br><br>Human: You are an AI chatbot. Carefully read the following transcript within "
-            "<transcript></transcript> tags. Provide a short answer to the question at the end. If the "
-            "answer cannot be determined from the transcript, then reply saying Sorry, I don't know. Use "
-            "gender neutral pronouns. Do not use XML tags in the answer.<br><question><br>{question}"
-            "<br></question><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
+            string_value="You are an AI chatbot. Please read the following transcript and provide a short answer to the question. If the answer cannot be determined from the transcript, reply with 'Sorry, I don't know.'\n\n"
+            "Question: {question}\n\n"
+            "Transcript: {transcript}\n\n"
+            "Answer:",
         )
 
         uploads_table_name = ssm.StringParameter.from_string_parameter_name(
@@ -274,40 +272,21 @@ class WebAppStack(Stack):
         input_bucket.grant_read(details_fn.role)
 
         # Summarization stack to process output json file
-        genai_fn_policy = iam.Policy(
-            self,
-            "summarize_fn_policy",
-            statements=[
-                iam.PolicyStatement(
-                    effect=iam.Effect.ALLOW,
-                    resources=["*"],
-                    actions=["bedrock:InvokeModel"],
-                )
-            ],
-        )
-
         genai_fn = _lambda.Function(
             self,
             "genai_query_api_fn",
             runtime=ci_lambda_runtime,
             handler="genai_query.handler",
             timeout=Duration.minutes(15),
-            code=_lambda.Code.from_asset(
-                "web_app/lambdas",
-                bundling=BundlingOptions(
-                    image=_lambda.Runtime.PYTHON_3_11.bundling_image,
-                    command=[
-                        "bash",
-                        "-c",
-                        "pip install boto3 -t /asset-output && cp -au . /asset-output",
-                    ],
-                ),
-            ),
+            code=_lambda.Code.from_asset("web_app/lambdas"),
             role=lambda_role,
-            environment={"UploadsTable": uploads_table.table_name},
+            environment={
+                "UploadsTable": uploads_table.table_name,
+                "MAX_TOKENS": "1024",
+                "TEMPERATURE": "0.1"
+            },
         )
         genai_fn.grant_invoke(cognito_idp.authenticated_role)
-        genai_fn.role.attach_inline_policy(genai_fn_policy)
 
         genai_api = rest_api.root.add_resource("genai")
         genai_with_id = genai_api.add_resource("{key}")

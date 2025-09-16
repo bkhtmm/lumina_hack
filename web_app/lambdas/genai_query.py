@@ -5,6 +5,7 @@ import json
 import os
 
 import boto3
+from llama_client import Llama4ScoutClient
 
 print("Loading Gen AI Query Fn...")
 s3_client = boto3.client("s3")
@@ -13,153 +14,41 @@ tableName = os.environ["UploadsTable"]
 table = boto3.resource("dynamodb").Table(tableName)
 s3_resource = boto3.resource("s3")
 
-# Defaults
-AWS_REGION = (
-    os.environ["AWS_REGION_OVERRIDE"]
-    if "AWS_REGION_OVERRIDE" in os.environ
-    else os.environ["AWS_REGION"]
-)
-ENDPOINT_URL = os.environ.get(
-    "ENDPOINT_URL", f"https://bedrock-runtime.{AWS_REGION}.amazonaws.com"
-)
+# Llama4Scout Configuration
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "1024"))
-MODEL_ID = str(os.getenv("MODEL_ID", "anthropic.claude-3-sonnet-20240229-v1:0"))
+TEMPERATURE = float(os.getenv("TEMPERATURE", "0.1"))
 
-DEFAULT_MAX_TOKENS = 1024
 SUCCESS = "SUCCESS"
 FAILED = "FAILED"
-bedrock_client = None
 SSM_LLM_CHATBOT_NAME = "ci_chatbot_prompt"
 
-
-def get_request_body(modelId, parameters, prompt):
-    provider = modelId.split(".")[0]
-    request_body = None
-    if provider == "anthropic":
-        request_body = { "messages": [{"role": "user","content": [{"type": "text","text": prompt}]}],"anthropic_version": "bedrock-2023-05-31","max_tokens": DEFAULT_MAX_TOKENS}
-        request_body.update(parameters)
-    elif provider == "ai21":
-        request_body = {"prompt": prompt, "maxTokens": DEFAULT_MAX_TOKENS}
-        request_body.update(parameters)
-    elif provider == "amazon":
-        textGenerationConfig = {"maxTokenCount": DEFAULT_MAX_TOKENS}
-        textGenerationConfig.update(parameters)
-        request_body = {
-            "inputText": prompt,
-            "textGenerationConfig": textGenerationConfig,
-        }
-    else:
-        raise Exception("Unsupported provider: ", provider)
-    return request_body
+# Initialize Llama4Scout client
+llama_client = Llama4ScoutClient()
 
 
-def get_generate_text(modelId, response):
-    provider = modelId.split(".")[0]
-    generated_text = None
-    if provider == "anthropic":
-        response_body = json.loads(response.get("body").read().decode())
-        generated_text = response_body["content"][0]["text"]
-    elif provider == "ai21":
-        response_body = json.loads(response.get("body").read())
-        generated_text = response_body.get("completions")[0].get("data").get("text")
-    elif provider == "amazon":
-        response_body = json.loads(response.get("body").read())
-        generated_text = response_body.get("results")[0].get("outputText")
-    else:
-        raise Exception("Unsupported provider: ", provider)
-    return generated_text
+def call_llama(parameters, prompt):
+    """
+    Call Llama4Scout API instead of Bedrock
+    """
+    return llama_client.generate_response(prompt, parameters)
 
 
-def get_bedrock_client():
-    client = boto3.client(
-        service_name="bedrock-runtime",
-        region_name=AWS_REGION,
-        endpoint_url=ENDPOINT_URL,
-    )
-    return client
-
-
-def call_llm(parameters, prompt):
-    modelId = MODEL_ID
-    body = get_request_body(modelId, parameters, prompt)
-    client = boto3.client(
-        service_name="bedrock-runtime",
-        region_name=AWS_REGION,
-        endpoint_url=ENDPOINT_URL,
-    )
-    response = client.invoke_model(
-        body=json.dumps(body),
-        modelId=modelId,
-        accept="application/json",
-        contentType="application/json",
-    )
-    generated_text = get_generate_text(modelId, response)
-    return generated_text
-
-
-def get_bedrock_request_body(modelId, parameters, prompt):
-    provider = modelId.split(".")[0]
-    request_body = None
-    if provider == "anthropic":
-        request_body = { "messages": [{"role": "user","content": [{"type": "text","text": prompt}]}],"anthropic_version": "bedrock-2023-05-31","max_tokens": MAX_TOKENS}
-        request_body.update(parameters)
-    elif provider == "ai21":
-        request_body = {"prompt": prompt, "maxTokens": MAX_TOKENS}
-        request_body.update(parameters)
-    elif provider == "amazon":
-        textGenerationConfig = {"maxTokenCount": MAX_TOKENS}
-        textGenerationConfig.update(parameters)
-        request_body = {
-            "inputText": prompt,
-            "textGenerationConfig": textGenerationConfig,
-        }
-    else:
-        raise Exception("Unsupported provider: ", provider)
-    return request_body
-
-
-def get_bedrock_generate_text(modelId, response):
-    provider = modelId.split(".")[0]
-    generated_text = None
-    if provider == "anthropic":
-        response_body = json.loads(response.get("body").read().decode())
-        generated_text = response_body["content"][0]["text"]
-    elif provider == "ai21":
-        response_body = json.loads(response.get("body").read())
-        generated_text = response_body.get("completions")[0].get("data").get("text")
-    elif provider == "amazon":
-        response_body = json.loads(response.get("body").read())
-        generated_text = response_body.get("results")[0].get("outputText")
-    else:
-        raise Exception("Unsupported provider: ", provider)
-    generated_text = generated_text.replace("```", "")
-    return generated_text
-
-
-def call_bedrock(parameters, prompt):
-    global bedrock_client
-    modelId = MODEL_ID
-    body = get_bedrock_request_body(modelId, parameters, prompt)
-    if bedrock_client is None:
-        bedrock_client = get_bedrock_client()
-    response = bedrock_client.invoke_model(
-        body=json.dumps(body),
-        modelId=modelId,
-        accept="application/json",
-        contentType="application/json",
-    )
-    generated_text = get_bedrock_generate_text(modelId, response)
-    return generated_text
-
-
-def generate_bedrock_query(prompt, transcript, question):
-    # first check to see if this is one prompt, or many prompts as a json
+def generate_llama_query(prompt, transcript, question):
+    """
+    Generate query using Llama4Scout instead of Bedrock
+    """
+    # Clean up prompt formatting
     prompt = prompt.replace("<br>", "\n")
     prompt = prompt.replace("{transcript}", transcript)
     if question != "":
         prompt = prompt.replace("{question}", question)
-    parameters = {"temperature": 0}
-    generated_text = call_bedrock(parameters, prompt)
+    
+    parameters = {
+        "temperature": TEMPERATURE,
+        "max_tokens": MAX_TOKENS
+    }
+    
+    generated_text = call_llama(parameters, prompt)
     return generated_text
 
 
@@ -211,10 +100,10 @@ def handler(event, context):
                 Name=SSM_LLM_CHATBOT_NAME
             )
             prompt = llm_summarization_prompt["Parameter"]["Value"]
-            query_response = generate_bedrock_query(prompt, transcript_data, request["query"])
-            print(f"Got response from {MODEL_ID} for {key}")
+            query_response = generate_llama_query(prompt, transcript_data, request["query"])
+            print(f"Got response from Llama4Scout for {key}")
     except Exception as err:
-        query_response = "An error occurred generating Bedrock query response."
+        query_response = "An error occurred generating Llama4Scout query response."
         print(query_response)
         print(err)
         return get_err_response()

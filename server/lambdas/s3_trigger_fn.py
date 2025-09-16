@@ -24,7 +24,7 @@ def start_workflow(bucket, key, last_modified, content_type, content_length):
     response = step_function_client.start_execution(
         stateMachineArn=step_functions_arn,
         name=str(uuid.uuid4()),
-        input=json.dumps({"bucket": bucket, "key": key}),
+        input=json.dumps({"event": {"bucket": bucket, "key": key}}),
     )
 
     payload = {

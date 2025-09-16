@@ -6,7 +6,8 @@
 import aws_cdk as cdk
 from constructs import Construct
 
-from ml_stack.cdk.ml_stack import MLStack
+# Remove ML stack import - no longer needed
+# from ml_stack.cdk.ml_stack import MLStack
 from server.cdk.server_stack import ServerStack
 from web_app.cdk.app_stack import WebAppStack
 
@@ -15,12 +16,8 @@ class CIStack(Construct):
     def __init__(self, scope: Construct, id: str, *, prod=False):
         super().__init__(scope, id)
 
-        # Server Stack
-        ml_stack = MLStack(app, "ci-ml")
-
-        # Server Stack
+        # Server Stack (no longer depends on ML stack)
         server_stack = ServerStack(app, "ci-process")
-        server_stack.add_dependency(ml_stack)
 
         # UI Stack
         web_stack = WebAppStack(app, "ci-web")
