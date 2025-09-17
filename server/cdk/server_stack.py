@@ -1,6 +1,7 @@
 #  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: MIT-0
 
+import os
 import typing
 
 import aws_cdk
@@ -139,7 +140,7 @@ class ServerStack(Stack):
             code=_lambda.Code.from_asset("server/lambdas"),
             timeout=Duration.minutes(3),
             environment={
-                "LEMONFOX_API_KEY": cfg.LEMONFOX_API_KEY,
+                "LEMONFOX_API_KEY": os.getenv('LEMONFOX_API_KEY', ''),
                 "LEMONFOX_BASE_URL": cfg.LEMONFOX_BASE_URL,
                 "LEMONFOX_TIMEOUT": str(cfg.LEMONFOX_TIMEOUT),
                 "LEMONFOX_MAX_RETRIES": str(cfg.LEMONFOX_MAX_RETRIES)
@@ -166,7 +167,7 @@ class ServerStack(Stack):
             code=_lambda.Code.from_asset("server/lambdas"),
             timeout=Duration.minutes(3),
             environment={
-                "LEMONFOX_API_KEY": cfg.LEMONFOX_API_KEY,
+                "LEMONFOX_API_KEY": os.getenv('LEMONFOX_API_KEY', ''),
                 "LEMONFOX_BASE_URL": cfg.LEMONFOX_BASE_URL,
                 "LEMONFOX_TIMEOUT": str(cfg.LEMONFOX_TIMEOUT),
                 "LEMONFOX_MAX_RETRIES": str(cfg.LEMONFOX_MAX_RETRIES)

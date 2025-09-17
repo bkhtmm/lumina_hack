@@ -1,6 +1,8 @@
 #  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: MIT-0
 
+import os
+
 # Application Configuration
 # Note: changing the APP_NAME will result in a new stack being provisioned
 APP_NAME = "CI"
@@ -49,7 +51,8 @@ LLAMA_API_TIMEOUT = 30
 LLAMA_MAX_RETRIES = 3
 
 # Lemonfox.ai API Configuration (replaces SageMaker)
-LEMONFOX_API_KEY = "tYI8fFQFeNdK1sTexXo7l2idDCkKu5O3"
+# LEMONFOX_API_KEY should be set via environment variable or AWS Secrets Manager
+LEMONFOX_API_KEY = os.getenv('LEMONFOX_API_KEY', '')
 LEMONFOX_BASE_URL = "https://api.lemonfox.ai/v1"
 LEMONFOX_TIMEOUT = 300  # 5 minutes for long audio files
 LEMONFOX_MAX_RETRIES = 3

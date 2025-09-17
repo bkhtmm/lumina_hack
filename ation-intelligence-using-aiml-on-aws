@@ -1,0 +1,48 @@
+[33m4d98c10[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Initial commit: Conversation Intelligence Platform with external AI APIs
+[33m1d5a4b9[m update the diarization image to utilize virtual environment
+[33mddcf75e[m update readme
+[33m7e02ca4[m update readme
+[33m30c67b0[m update to include instructions for ec2 based setup
+[33mae35518[m update to include available NumPy distribution
+[33m3dfb111[m fix timing issue with attaching inline policy
+[33mfc24b63[m fix Numpy20 issue with NaN
+[33m4ec4785[m introduce sleep to avoid Bedrock API throttling
+[33ma1093c0[m remove un-necessary imports
+[33m9089d75[m update libs for CUDA 12.4.1
+[33mf0d055e[m[33m ([m[1;31morigin/inferentia[m[33m)[m removed package lock
+[33m5b3957a[m Update package.json
+[33m84fe377[m[33m ([m[1;31morigin/dependabot/npm_and_yarn/web_app/ci-portal/multi-6bc014718a[m[33m)[m Bump path-to-regexp and express in /web_app/ci-portal
+[33m038ac24[m[33m ([m[1;31morigin/dependabot/npm_and_yarn/web_app/ci-portal/cross-spawn-7.0.6[m[33m)[m Bump cross-spawn from 7.0.3 to 7.0.6 in /web_app/ci-portal
+[33mf348488[m[33m ([m[1;31morigin/dependabot/npm_and_yarn/web_app/ci-portal/http-proxy-middleware-2.0.7[m[33m)[m Bump http-proxy-middleware from 2.0.6 to 2.0.7 in /web_app/ci-portal
+[33md2a8a69[m[33m ([m[1;31morigin/dependabot/npm_and_yarn/web_app/ci-portal/multi-9f37c16f8f[m[33m)[m Bump cookie and express in /web_app/ci-portal
+[33m0c10646[m[33m ([m[1;31morigin/dependabot/npm_and_yarn/web_app/ci-portal/rollup-2.79.2[m[33m)[m Bump rollup from 2.79.1 to 2.79.2 in /web_app/ci-portal
+[33m0d5ea89[m Merge pull request #16 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/multi-1d234c620e
+[33me44dbd0[m[33m ([m[1;31morigin/dependabot/npm_and_yarn/web_app/ci-portal/axios-1.7.7[m[33m)[m Bump axios from 1.6.5 to 1.7.7 in /web_app/ci-portal
+[33m4cef2dd[m Merge pull request #15 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/multi-d66d039ac5
+[33meedab75[m Merge pull request #13 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/micromatch-4.0.8
+[33m13b8b12[m Merge pull request #12 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/webpack-5.94.0
+[33m0f76064[m Merge pull request #11 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/multi-5c6774d005
+[33mc2f9fea[m Merge pull request #17 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/multi-9423f4c335
+[33m80dab00[m Bump body-parser and express in /web_app/ci-portal
+[33m937ecd6[m Bump path-to-regexp and express in /web_app/ci-portal
+[33m51873ec[m Bump serve-static and express in /web_app/ci-portal
+[33m59a0ea4[m Bump micromatch from 4.0.5 to 4.0.8 in /web_app/ci-portal
+[33m0790abf[m Bump webpack from 5.89.0 to 5.94.0 in /web_app/ci-portal
+[33m9ae654f[m Bump fast-xml-parser, @aws-amplify/ui-react and aws-amplify
+[33m85bce2d[m Merge pull request #8 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/ws-6.2.3
+[33m4330832[m Merge pull request #9 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/braces-3.0.3
+[33m18f92d7[m Bump braces from 3.0.2 to 3.0.3 in /web_app/ci-portal
+[33m0c2d509[m Bump ws from 6.2.2 to 6.2.3 in /web_app/ci-portal
+[33m2209a9d[m Updated for Claude v3 (#7)
+[33m5a01b8a[m Bump ejs from 3.1.9 to 3.1.10 in /web_app/ci-portal (#6)
+[33m94181ea[m Merge pull request #5 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/express-4.19.2
+[33me68e290[m Merge pull request #4 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/webpack-dev-middleware-5.3.4
+[33m1c4b959[m Merge pull request #3 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/follow-redirects-1.15.6
+[33m46405ec[m Bump express from 4.18.2 to 4.19.2 in /web_app/ci-portal
+[33m41ef43b[m Bump webpack-dev-middleware from 5.3.3 to 5.3.4 in /web_app/ci-portal
+[33mcf23b4a[m Updated Dockerfile to support latest cuda runtime
+[33m63be4df[m Bump follow-redirects from 1.15.4 to 1.15.6 in /web_app/ci-portal
+[33m96ea965[m Merge pull request #1 from aws-samples/dependabot/npm_and_yarn/web_app/ci-portal/ip-1.1.9
+[33m3c4eb87[m Bump ip from 1.1.8 to 1.1.9 in /web_app/ci-portal
+[33m6e7f0f6[m Improved README with usage, and feature details
+[33m7910b7f[m Initial Commit
